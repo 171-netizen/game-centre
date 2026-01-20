@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Runner Rush</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      background: #222;
+      border: 2px solid #0f0;
+    }
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #0f0;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+<div id="info">Press SPACE or UP to jump</div>
+<canvas id="game" width="600" height="300"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+let player = { x: 50, y: 230, w: 30, h: 30, vy: 0, jumping: false };
+let gravity = 0.7;
+let obstacles = [];
+let frame = 0;
+let score = 0;
+let gameOver = false;
+
+function spawnObstacle() {
+  const width = 20 + Math.random() * 20;
+  obstacles.push({
+    x: canvas.width,
+    y: 240,
+    w: width,
+    h: 30
+  });
+}
+
+function resetGame() {
+  obstacles = [];
+  frame = 0;
+  score = 0;
+  gameOver = false;
+  player.y = 230;
+  player.vy = 0;
+  player.jumping = false;
+}
+
+function update() {
+  if (gameOver) return;
+
+  frame++;
+  score++;
+
+  // Spawn obstacles
+  if (frame % 90 === 0) {
+    spawnObstacle();
+  }
+
+  // Player physics
+  player.vy += gravity;
+  player.y += player.vy;
+
+  if (player.y >= 230) {
+    player.y = 230;
+    player.vy = 0;
+    player.jumping = false;
+  }
+
+  // Move obstacles
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    obstacles[i].x -= 5;
+    if (obstacles[i].x + obstacles[i].w < 0) {
+      obstacles.splice(i, 1);
+    }
+  }
+
+  // Collision
+  for (let obs of obstacles) {
+    if (
+      player.x < obs.x + obs.w &&
+      player.x + player.w > obs.x &&
+      player.y < obs.y + obs.h &&
+      player.y + player.h > obs.y
+    ) {
+      gameOver = true;
+    }
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Ground
+  ctx.fillStyle = '#0f0';
+  ctx.fillRect(0, 260, canvas.width, 40);
+
+  // Player
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+
+  // Obstacles
+  ctx.fillStyle = '#f00';
+  for (let obs of obstacles) {
+    ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+  }
+
+  // Score
+  ctx.fillStyle = '#0f0';
+  ctx.font = '20px Arial';
+  ctx.fillText('Score: ' + score, 10, 25);
+
+  if (gameOver) {
+    ctx.fillStyle = '#fff';
+    ctx.font = '28px Arial';
+    ctx.fillText('Game Over', canvas.width / 2 - 80, canvas.height / 2 - 10);
+    ctx.font = '18px Arial';
+    ctx.fillText('Press R to restart', canvas.width / 2 - 80, canvas.height / 2 + 20);
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown', (e) => {
+  if ((e.code === 'Space' || e.code === 'ArrowUp') && !player.jumping && !gameOver) {
+    player.vy = -12;
+    player.jumping = true;
+  }
+  if (e.key.toLowerCase() === 'r' && gameOver) {
+    resetGame();
+  }
+});
+
+loop();
+</script>
+</body>
+</html>
